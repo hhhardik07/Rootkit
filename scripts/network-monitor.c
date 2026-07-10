@@ -6,8 +6,9 @@
 
 SEC("kprobe/sendmsg")//kprobe into sendmsg ,which is used to send data across a socket
 int bpf_prog(struct pt_regs *ctx) {
-    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM1(ctx);//2ndt argument which is the msg pointer  that is the he message header used to extract the msg struct
-    char *buf = (char *)msg->msg_data;
+    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);//2nd argument which is the msg pointer  that is the he message header used to extract the msg struct
+    // msg is a pointer to the msgdhr struct that has the message 
+    char *buf = (char *)msg->msg_data;// access the raw buffer 
     size_t len = msg->msg_len;
 // store in the map 
     struct packet_data data = {.buf = buf, .len = len};
