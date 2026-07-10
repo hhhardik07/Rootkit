@@ -4,6 +4,9 @@
 #include <bpf/bpf_tracing.h>
 #include "process_map.bpf.h"
 
+
+
+// script that uses kprobe to hooks into do_excve gets the process and modfies the output
 SEC("kprobe/do_execve")// attach to do_execve which is the kernel function called when a process executes a new program
 int bpf_prog(struct pt_regs *ctx) {
     // getting the current task 
