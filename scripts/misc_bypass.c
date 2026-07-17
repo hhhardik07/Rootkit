@@ -28,7 +28,7 @@ int bpf_prog_open(struct pt_regs *ctx)
     int ret;
     //pulling the path into the local buffer 
     //the helper function returns the bytes copied 
-    ret=bpf_probe_read_str(buf, sizeof(buf), user_path);
+    ret=bpf_probe_read_user_str(buf, sizeof(buf), user_path);
         if (ret <= 0)
             return 1; // pass if not read 
 //checking if the copied buffer matches to any of the interesting files we care abt
