@@ -24,7 +24,7 @@ int bpf_prog_open(struct pt_regs *ctx)
 {
     // First argument to open() is the path string (user-space pointer).
     char *user_path = (char *)PT_REGS_PARM1(ctx);
-    char buf[MAX_PATH];
+    char buf[MAX];
     int ret;
     //pulling the path into the local buffer 
     //the helper function returns the bytes copied 
