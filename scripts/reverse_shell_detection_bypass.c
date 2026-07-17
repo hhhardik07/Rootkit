@@ -13,17 +13,39 @@ struct {
 // SEC("maps ") to place this map in the .maps section 
 //used to track whether to ignore a specifc execve() event 
 
-SEC("tracepoint/syscalls/sys_enter_execve")
+SEC("kprobe/__x64_sys_execve")
 int bpf_prog(struct pt_regs *ctx) {
-    // Check if the execve is for /bin/sh or /bin/bash
-    char *filename = (char *)PT_REGS_ARG(ctx, 0);// first argument which is used to get the filename in this case /bin/sh
-    if (filename && (strcmp(filename, "/bin/sh") == 0 || strcmp(filename, "/bin/bash") == 0)) {
-        //is the filename is /bin/sh or /bin/bash ignore the event 
+//define the filename first 
+char filename[16] = {0};
+
+ //extract the first argument 
+ struct pt_regs *real_regs = (struct pt_regs *)PT_REGS_PARM1_CORE(ctx);
+  
+const char *user_filename_ptr = (const char *)PT_REGS_PARM1_CORE(real_regs);
+   const char *user_filename_ptr = (const char *)PT_REGS_PARM1_CORE(real_regs);
+       
+       if (!user_filename_ptr)
+           return 0;
+
+//pull the string from user space because user_filename_ptr conatians an dress from user space 
+long res = bpf_probe_read_user_str(filename, sizeof(filename), user_filename_ptr);
+    if (res < 0)
+        return 0;
+// if this is /bin/sh or /bin/bash
+
+int is_sh   = (__builtin_memcmp(filename, "/bin/sh", 8) == 0);
+    int is_bash = (__builtin_memcmp(filename, "/bin/bash", 10) == 0)
+
+
+if (is_sh || is_bash) {
         int key = 1;
         int *val = bpf_map_lookup_elem(&ignore_map, &key);
         if (val && *val == 1) {
-            return 0; // Ignore this event
+            return 0; 
         }
+    }
+
+           
     }
     return 1;
 }
